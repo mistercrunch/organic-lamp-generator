@@ -13,7 +13,7 @@ function App() {
     angleOffset: { value: 0, min: -Math.PI, max: Math.PI },
     roundiness: { value: 0, min: 0, max: 1 },
     opacity: { value: 0.5, min: 0, max: 1 },
-    waveSharpness: { value: 2, min: 0.5, max: 10 },
+    waveSharpness: { value: 2, min: 0, max: 10 },
     twistAngle: { value: 0, min: -0.5, max: 0.5 },
     tiltAngle: { value: 0, min: -1, max: 1 },
     cameraFOV: { value: 50, min: 20, max: 120 }

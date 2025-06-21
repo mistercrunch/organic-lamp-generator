@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 
 const globalNoise2D = createNoise2D()
+const RESOLUTION = 200;
 
 export default function LampScene({ params }) {
   const {
@@ -15,15 +16,17 @@ export default function LampScene({ params }) {
 
   const slatsData = useMemo(() => {
     return Array.from({ length: slats }).map((_, i) => {
-      const thetaCenter = (i / slats) * Math.PI * 2 + angleOffset
+      const thetaNorm = i / slats
+      const thetaCenter = thetaNorm * Math.PI * 2 + angleOffset
       const profile = []
 
-      for (let j = 0; j <= 30; j++) {
-        const zNorm = j / 30
+      for (let j = 0; j <= RESOLUTION; j++) {
+        const zNorm = j / RESOLUTION
         const y = zNorm * height - height / 2
 
         const sharedWave = globalNoise2D(zNorm * waveSharpness, 0)
-        const slatVariation = globalNoise2D(zNorm * 5, i * 0.5)
+        const slatVariation = globalNoise2D(zNorm * 5, thetaNorm * 5)  // << CHANGE HERE
+
         const offset = sharedWave * waviness + slatVariation * waviness * 0.3
 
         const bulge = roundiness * radius * Math.sin(zNorm * Math.PI)
@@ -109,30 +112,24 @@ function generateStrokeLines(profile, twistAngle, tiltAngle) {
 
   return [leftEdge, rightEdge, topEdge, bottomEdge]
 }
+
 function transformAndWrap(local, profilePoint, twistAngle, tiltAngle) {
   const { innerR, thetaCenter } = profilePoint
 
-  // Slat tangent frame
   const radial = new THREE.Vector3(Math.cos(thetaCenter), 0, Math.sin(thetaCenter))
   const vertical = new THREE.Vector3(0, 1, 0)
   const tangent = new THREE.Vector3(-Math.sin(thetaCenter), 0, Math.cos(thetaCenter))
 
   let point = new THREE.Vector3(local.x, local.y, 0)
 
-  // Twist: slat-local X (width)
   point.applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), twistAngle))
 
-  // Map to world position (before tilt)
   const worldPos = new THREE.Vector3()
     .addScaledVector(radial, innerR + point.x)
     .addScaledVector(vertical, point.y)
     .addScaledVector(tangent, point.z)
 
-  // Compute hinge center (radial position at slat)
-  const hingeCenter = new THREE.Vector3()
-    .addScaledVector(radial, innerR)
-  
-  // Apply true blinds tilt: rotate around vertical axis through hingeCenter
+  const hingeCenter = new THREE.Vector3().addScaledVector(radial, innerR)
   worldPos.sub(hingeCenter).applyAxisAngle(vertical, tiltAngle).add(hingeCenter)
 
   return [worldPos.x, worldPos.y, worldPos.z]
