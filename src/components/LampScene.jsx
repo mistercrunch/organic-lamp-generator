@@ -9,8 +9,8 @@ export default function LampScene({ params }) {
   const {
     height, radius, slats, profileResolution, roundiness,
     baseSize,
-    lfo1Shape, lfo1Frequency, lfo1Amplitude, lfo1Randomness,
-    lfo2Shape, lfo2Frequency, lfo2Amplitude, lfo2Randomness,
+    lfo1Shape, lfo1Frequency, lfo1Amplitude, lfo1PhaseRandomness, lfo1AmplitudeRandomness,
+    lfo2Shape, lfo2Frequency, lfo2Amplitude, lfo2PhaseRandomness, lfo2AmplitudeRandomness,
     twistAngle, tiltAngle, opacity
   } = params
 
@@ -20,31 +20,40 @@ export default function LampScene({ params }) {
     return Array.from({ length: slats }).map((_, i) => {
       const thetaNorm = i / slats
       const thetaCenter = thetaNorm * Math.PI * 2
-      const profile = []
 
+      // Compute phase offsets per slat (loop-safe)
+      const lfo1PhaseOffset = computeLoopSafeNoise(thetaNorm) * lfo1PhaseRandomness
+      const lfo2PhaseOffset = computeLoopSafeNoise(thetaNorm + 100) * lfo2PhaseRandomness  // offset seed
+
+      const profile = []
       for (let j = 0; j <= profileResolution; j++) {
         const zNorm = j / profileResolution
         const y = zNorm * height - height / 2
 
-        const phaseNoise = computeNoise(zNorm)  // single vertical noise used by both LFOs
+        // Vertical amplitude modulation (loop-safe)
+        const lfo1AmpMod = 1 + computeLoopSafeNoise(zNorm) * lfo1AmplitudeRandomness
+        const lfo2AmpMod = 1 + computeLoopSafeNoise(zNorm + 200) * lfo2AmplitudeRandomness
 
-        const lfo1 = computeLFO(zNorm, lfo1Shape, lfo1Frequency, lfo1Randomness, phaseNoise)
-        const lfo2 = computeLFO(zNorm, lfo2Shape, lfo2Frequency, lfo2Randomness, phaseNoise)
+        const lfo1 = computeLFO(zNorm, lfo1Shape, lfo1Frequency, lfo1PhaseOffset)
+        const lfo2 = computeLFO(zNorm, lfo2Shape, lfo2Frequency, lfo2PhaseOffset)
 
-        const totalOffset = baseSize + lfo1Amplitude * lfo1 + lfo2Amplitude * lfo2
+        const totalOffset =
+          baseSize +
+          lfo1Amplitude * lfo1AmpMod * lfo1 +
+          lfo2Amplitude * lfo2AmpMod * lfo2
 
         const bulge = roundiness * radius * Math.sin(zNorm * Math.PI)
         const baseR = radius + bulge * 0.5
-
         const x = Math.max(totalOffset + bulge, bulge + minSlatWidth)
+
         profile.push({ x, y, baseR, thetaCenter })
       }
 
       return profile
     })
   }, [height, radius, slats, profileResolution, roundiness, baseSize,
-      lfo1Shape, lfo1Frequency, lfo1Amplitude, lfo1Randomness,
-      lfo2Shape, lfo2Frequency, lfo2Amplitude, lfo2Randomness])
+      lfo1Shape, lfo1Frequency, lfo1Amplitude, lfo1PhaseRandomness, lfo1AmplitudeRandomness,
+      lfo2Shape, lfo2Frequency, lfo2Amplitude, lfo2PhaseRandomness, lfo2AmplitudeRandomness])
 
   return (
     <>
@@ -66,14 +75,12 @@ export default function LampScene({ params }) {
   )
 }
 
-function computeNoise(zNorm) {
-  // Smooth vertical organic noise (shared for both LFOs)
-  return noise(Math.cos(zNorm * Math.PI * 2), Math.sin(zNorm * Math.PI * 2)) 
+function computeLoopSafeNoise(norm) {
+  return noise(Math.cos(norm * Math.PI * 2), Math.sin(norm * Math.PI * 2))
 }
 
-function computeLFO(zNorm, shape, frequency, randomness, phaseNoise) {
-  const phaseBase = zNorm * frequency
-  const phase = phaseBase + randomness * phaseNoise
+function computeLFO(zNorm, shape, frequency, phaseOffset) {
+  const phase = zNorm * frequency + phaseOffset
   return getWaveform(phase, shape)
 }
 
