@@ -12,12 +12,16 @@ function App() {
     waviness: { value: 20, min: 0, max: 50 },
     angleOffset: { value: 0, min: -Math.PI, max: Math.PI },
     roundiness: { value: 0, min: 0, max: 1 },
-    opacity: { value: 0.5, min: 0, max: 1 }
+    opacity: { value: 0.5, min: 0, max: 1 },
+    waveSharpness: { value: 2, min: 0.5, max: 10 },
+    twistAngle: { value: 0, min: -0.5, max: 0.5 },
+    tiltAngle: { value: 0, min: -0.5, max: 0.5 },
+    cameraFOV: { value: 50, min: 20, max: 120 }
   })
 
   return (
     <>
-      <Canvas camera={{ position: [0, params.height / 2, params.radius * 3] }}>
+      <Canvas camera={{ fov: params.cameraFOV, position: [0, 0, params.radius * 4] }}>
         <ambientLight />
         <OrbitControls />
         <LampScene params={params} />
