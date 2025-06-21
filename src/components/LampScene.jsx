@@ -109,31 +109,31 @@ function generateStrokeLines(profile, twistAngle, tiltAngle) {
 
   return [leftEdge, rightEdge, topEdge, bottomEdge]
 }
-
 function transformAndWrap(local, profilePoint, twistAngle, tiltAngle) {
   const { innerR, thetaCenter } = profilePoint
 
-  // Build slat's tangent frame at this theta
+  // Slat tangent frame
   const radial = new THREE.Vector3(Math.cos(thetaCenter), 0, Math.sin(thetaCenter))
   const vertical = new THREE.Vector3(0, 1, 0)
   const tangent = new THREE.Vector3(-Math.sin(thetaCenter), 0, Math.cos(thetaCenter))
 
-  // Convert flat slat point to local 3D
   let point = new THREE.Vector3(local.x, local.y, 0)
 
-  // Apply twist (around local X axis → radial direction)
-  const twistQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), twistAngle)
-  point.applyQuaternion(twistQuat)
+  // Twist: slat-local X (width)
+  point.applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), twistAngle))
 
-  // Apply tilt (around local Y axis → vertical direction)
-  const tiltQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), tiltAngle)
-  point.applyQuaternion(tiltQuat)
-
-  // Map local slat point into world space using slat frame
+  // Map to world position (before tilt)
   const worldPos = new THREE.Vector3()
     .addScaledVector(radial, innerR + point.x)
     .addScaledVector(vertical, point.y)
     .addScaledVector(tangent, point.z)
+
+  // Compute hinge center (radial position at slat)
+  const hingeCenter = new THREE.Vector3()
+    .addScaledVector(radial, innerR)
+  
+  // Apply true blinds tilt: rotate around vertical axis through hingeCenter
+  worldPos.sub(hingeCenter).applyAxisAngle(vertical, tiltAngle).add(hingeCenter)
 
   return [worldPos.x, worldPos.y, worldPos.z]
 }
