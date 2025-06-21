@@ -22,13 +22,13 @@ export default function App() {
 
     // LFO 2
     lfo2Shape: { options: ['sine', 'triangle', 'square', 'flat'], value: 'flat' },
-    lfo2Frequency: { value: 1, min: 0.1, max: 10 },
+    lfo2Frequency: { value: 1, min: 0.1, max: 100 },
     lfo2Amplitude: { value: 20, min: 0, max: 100 },
     lfo2PhaseRandomness: { value: 0, min: 0, max: 1 },
     lfo2AmplitudeRandomness: { value: 0, min: 0, max: 1 },
 
     twistAngle: { value: 0, min: -0.5, max: 0.5 },
-    tiltAngle: { value: 0, min: -0.5, max: 0.5 },
+    tiltAngle: { value: 0, min: -2, max: 2 },
     opacity: { value: 0.5, min: 0, max: 1 },
   })
 
