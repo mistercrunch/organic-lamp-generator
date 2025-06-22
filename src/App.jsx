@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import LampScene from './components/LampScene'
 import { Leva, useControls, useCreateStore } from 'leva'
-import { generateSVG } from './export/generateSVG'
+import { generateSlatsSVG, generateDonutSVG } from './export/generateSVG'
 
 export default function App() {
   const store = useCreateStore()
@@ -57,15 +57,29 @@ export default function App() {
     }
     reader.readAsText(file)
   }
+  const downloadSVG = (svgContent, filename) => {
+		const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+		const url = URL.createObjectURL(blob)
+		const link = document.createElement('a')
+		link.href = url
+		link.download = filename
+		link.click()
+	}
+
+ const handleGenerateSlatsSVG = () => {
+		const svg = generateSlatsSVG(params)
+		downloadSVG(svg, 'lamp_slats.svg')
+	}
+
+	const handleGenerateDonutSVG = () => {
+		const svg = generateDonutSVG(params)
+		downloadSVG(svg, 'lamp_donuts.svg')
+	}
 
   const handleGenerateSVG = () => {
-    const svg = generateSVG(params)
-    const blob = new Blob([svg], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'lamp_slats.svg'
-    link.click()
+
+    handleGenerateSlatsSVG();
+    handleGenerateDonutSVG();
   }
 
   return (
@@ -77,8 +91,7 @@ export default function App() {
       </div>
 
       <Leva store={store} collapsed />
-      
-      <Canvas camera={{ fov: 50, position: [0, 0, 600] }}>
+      <Canvas  camera={{ fov: 100, position: [0, 0, 600] }}>
         <ambientLight intensity={0.7} />
         <directionalLight position={[1, 1, 1]} />
         <OrbitControls />
