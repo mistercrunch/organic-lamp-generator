@@ -1,11 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import LampScene from './components/LampScene'
 import { Leva, useControls, useCreateStore } from 'leva'
 import { generateSlatsSVG, generateDonutSVG } from './export/generateSVG'
-import { Layout, Button, Upload, message, Space, Typography, Card } from 'antd'
-import { UploadOutlined, DownloadOutlined, FileAddOutlined, FileDoneOutlined } from '@ant-design/icons'
+import { Layout, Button, Upload, message, Space, Typography, Card, Modal } from 'antd'
+import { UploadOutlined, DownloadOutlined, FileAddOutlined, FileDoneOutlined, EyeOutlined } from '@ant-design/icons'
 import { Helmet } from 'react-helmet'
 
 const { Header, Content } = Layout
@@ -41,7 +41,10 @@ export default function App() {
   const store = useCreateStore()
   const params = useControls(schema, { store })
 
-  const downloadSVG = (svgContent, filename) => {
+  const [svgPreview, setSvgPreview] = useState(null)
+  const [modalTitle, setModalTitle] = useState('')
+
+  const handleDownload = (svgContent, filename) => {
     const blob = new Blob([svgContent], { type: 'image/svg+xml' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -50,14 +53,10 @@ export default function App() {
     link.click()
   }
 
-  const handleGenerateSlatsSVG = () => {
-    const svg = generateSlatsSVG(params)
-    downloadSVG(svg, 'lamp_slats.svg')
-  }
-
-  const handleGenerateDonutSVG = () => {
-    const svg = generateDonutSVG(params)
-    downloadSVG(svg, 'lamp_donuts.svg')
+  const handleShowPreview = (type) => {
+    const svg = type === 'slats' ? generateSlatsSVG(params) : generateDonutSVG(params)
+    setModalTitle(type === 'slats' ? 'Slats SVG Preview' : 'Donuts SVG Preview')
+    setSvgPreview(svg)
   }
 
   const handleExportState = () => {
@@ -79,7 +78,7 @@ export default function App() {
             store.setValue(key, value)
           }
         })
-				store.refresh()
+        store.refresh()
         message.success('State imported successfully')
       } catch {
         message.error('Failed to import state file')
@@ -91,16 +90,14 @@ export default function App() {
 
   return (
     <>
-      <Helmet>
-        <title>Parametric Lamp Generator</title>
-      </Helmet>
+      <Helmet><title>Parametric Lamp Generator</title></Helmet>
 
       <Layout style={{ height: '100vh' }}>
-        <Header style={{ background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Header style={{ background: '#1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2rem' }}>Parametric Lamp Generator</div>
           <Space>
-            <Button icon={<FileAddOutlined />} onClick={handleGenerateSlatsSVG}>Slats SVG</Button>
-            <Button icon={<FileDoneOutlined />} onClick={handleGenerateDonutSVG}>Donuts SVG</Button>
+            <Button icon={<EyeOutlined />} onClick={() => handleShowPreview('slats')}>Slats SVG</Button>
+            <Button icon={<EyeOutlined />} onClick={() => handleShowPreview('donuts')}>Donuts SVG</Button>
             <Button icon={<DownloadOutlined />} onClick={handleExportState}>Export State</Button>
             <Upload beforeUpload={handleImportState} accept=".json" showUploadList={false}>
               <Button icon={<UploadOutlined />}>Import State</Button>
@@ -110,7 +107,6 @@ export default function App() {
 
         <Content style={{ position: 'relative' }}>
           <Leva store={store} style={{ top: 64 }} />
-
           <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, width: 220 }}>
             <Card title="Instructions" size="small" bordered>
               <ul style={{ paddingLeft: 20, marginBottom: 0 }}>
@@ -132,6 +128,24 @@ export default function App() {
           </Canvas>
         </Content>
       </Layout>
+
+      <Modal
+        open={!!svgPreview}
+        onCancel={() => setSvgPreview(null)}
+        title={modalTitle}
+        width="70vw"
+        footer={
+          <Button
+            type="primary"
+            onClick={() => handleDownload(svgPreview, `${modalTitle.replace(' ', '_').toLowerCase()}.svg`)}
+          >
+            Download SVG
+          </Button>
+        }
+        bodyStyle={{ maxHeight: '70vh', overflow: 'auto' }}
+      >
+        <div dangerouslySetInnerHTML={{ __html: svgPreview }} />
+      </Modal>
     </>
   )
 }

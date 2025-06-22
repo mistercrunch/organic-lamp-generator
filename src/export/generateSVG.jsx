@@ -1,7 +1,6 @@
 
 import { generateSlatProfiles } from '../core/generator'
 
-
 export function generateSlatsSVG(params) {
   const { materialThickness, height } = params
 
@@ -10,7 +9,7 @@ export function generateSlatsSVG(params) {
 
   const clearance = 0.5
   const notchWidth = effectiveMaterialThickness + clearance
-  const notchDepth = effectiveMaterialThickness * 1;
+  const notchDepth = effectiveMaterialThickness * 2
 
   const margin = 20
   const spacing = 20
@@ -19,32 +18,36 @@ export function generateSlatsSVG(params) {
 
   let yOffset = margin
 
-  const packed = profiles.map((profile, i) => {
-    const minY = Math.min(...profile.map(p => p.y))
-    const maxY = Math.max(...profile.map(p => p.y))
-    const slatHeight = maxY - minY
+	const packed = profiles.map((profile, i) => {
+		const minY = Math.min(...profile.map(p => p.y))
+		const maxY = Math.max(...profile.map(p => p.y))
+		const slatHeight = maxY - minY
 
-    const pathPoints = [
-      ...profile.map(p => [0, p.y - minY - yOffset]),
-      ...[...profile].reverse().map(p => [p.x, p.y - minY - yOffset]),
-      [0, profile[0].y - minY - yOffset]
-    ]
+		// find the inner left edge (smallest X of the two ends)
+		const minX = Math.min(profile[0].x, profile[profile.length - 1].x)
 
-    const notchPositions = [0.25, 0.75].map(zNorm => {
-      const y = (zNorm * height - height / 2) - minY - yOffset
-      return { x: 0, y }
-    })
+		const pathPoints = [
+			...profile.map(p => [p.x - minX, p.y - minY - yOffset]),
+			...[...profile].reverse().map(p => [p.x - minX + p.x, p.y - minY - yOffset]),
+			[0, profile[0].y - minY - yOffset]
+		]
 
-    const label = {
-      text: `${i + 1}`,
-      x: 5,
-      y: pathPoints[0][1] + 10
-    }
+		const notchPositions = [0.25, 0.75].map(zNorm => {
+			const y = (zNorm * height - height / 2) - minY - yOffset
+			return { x: 0, y }
+		})
 
-    yOffset += slatHeight + spacing
+		const label = {
+			text: `${i + 1}`,
+			x: notchDepth / 2,  // horizontally centered inside notch
+			y: pathPoints[0][1] + 10
+		}
 
-    return { pathPoints, notchPositions, label }
-  })
+		yOffset += slatHeight + spacing
+
+		return { pathPoints, notchPositions, label, minX }
+	})
+
 
   const maxWidth = Math.max(...packed.flatMap(p => p.pathPoints.map(([x]) => x))) + margin + 20
   const totalHeight = yOffset + margin
@@ -59,7 +62,12 @@ export function generateSlatsSVG(params) {
 
   const svgNotches = packed.flatMap(p => {
     return p.notchPositions.map(pos => {
-      return `<rect x="0" y="${-pos.y - notchWidth / 2}" width="${notchDepth}" height="${notchWidth}" stroke="black" fill="none" stroke-width="1" />`
+      // Get corresponding profile point
+      const index = Math.round(pos.zNorm * (p.profile.length - 1))
+      const point = p.profile[index]
+      const notchX = Math.min(point.baseR, point.baseR + point.x) - notchWidth / 2
+
+      return `<rect x="${notchX}" y="${-pos.y - notchWidth / 2}" width="${notchDepth}" height="${notchWidth}" stroke="black" fill="none" stroke-width="1" />`
     })
   }).join('\n')
 
@@ -74,8 +82,6 @@ ${svgNotches}
 ${svgLabels}
 </svg>`.trim()
 }
-
-
 export function generateDonutSVG(params) {
   const { radius, roundiness, coneAngle, height, slats, materialThickness, blindsTiltAngle } = params
 
