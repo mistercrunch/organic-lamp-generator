@@ -9,8 +9,10 @@ export default function LampScene({ params }) {
   return (
     <>
       {profiles.map((profile, i) => {
-        const geometry = buildGeometry(profile, params)
-        const strokePoints = buildStroke(profile, params)
+        const theta = i / profiles.length * Math.PI * 2
+
+        const geometry = buildGeometry(profile, params, theta)
+        const strokePoints = buildStroke(profile, params, theta)
 
         return (
           <group key={i}>
@@ -25,7 +27,7 @@ export default function LampScene({ params }) {
   )
 }
 
-function buildGeometry(profile, params) {
+function buildGeometry(profile, params, theta) {
   const vertices = []
   const indices = []
 
@@ -33,10 +35,10 @@ function buildGeometry(profile, params) {
     const p1 = profile[j]
     const p2 = profile[j + 1]
 
-    const p1L = transformToWorld(p1, 0, params)
-    const p1R = transformToWorld(p1, p1.x, params)
-    const p2L = transformToWorld(p2, 0, params)
-    const p2R = transformToWorld(p2, p2.x, params)
+    const p1L = transformToWorld(p1, 0, params, theta)
+    const p1R = transformToWorld(p1, p1.x, params, theta)
+    const p2L = transformToWorld(p2, 0, params, theta)
+    const p2R = transformToWorld(p2, p2.x, params, theta)
 
     vertices.push(...p1L, ...p1R, ...p2L, ...p2R)
 
@@ -52,49 +54,46 @@ function buildGeometry(profile, params) {
   return geometry
 }
 
-function buildStroke(profile, params) {
-  const leftEdge = profile.map(p => transformToWorld(p, 0, params))
-  const rightEdge = [...profile].reverse().map(p => transformToWorld(p, p.x, params))
+function buildStroke(profile, params, theta) {
+  const leftEdge = profile.map(p => transformToWorld(p, 0, params, theta))
+  const rightEdge = [...profile].reverse().map(p => transformToWorld(p, p.x, params, theta))
   const closed = [...leftEdge, ...rightEdge, leftEdge[0]]
   return closed.map(([x, y, z]) => new THREE.Vector3(x, y, z))
 }
+function transformToWorld(p, offsetX, params, theta) {
+  // Build flat slat-local position
+  const localX = offsetX
+  const localY = p.y
+  let localPos = new THREE.Vector3(localX, localY, 0)
 
-function transformToWorld(p, offsetX, params) {
-  const theta = p.thetaNorm * Math.PI * 2
-  const r = p.baseR + offsetX
+  // Align slats so they face outward at blindsTiltAngle = 0
+	const alignQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2)
 
-  // World space initial position
-  let pos = new THREE.Vector3(
-    Math.cos(theta) * r,
-    p.y,
-    Math.sin(theta) * r
-  )
+  localPos.applyQuaternion(alignQ)
 
-  // Build slat-local frame
-  const radial = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta))  // Z (normal)
-  const vertical = new THREE.Vector3(0, 1, 0)                            // Y (height)
-  const tangent = new THREE.Vector3(-Math.sin(theta), 0, Math.cos(theta))// X (width)
-
-  // Move into slat-local coordinates
-  const localX = tangent.dot(pos)
-  const localY = vertical.dot(pos)
-  const localZ = radial.dot(pos)
-  let localPos = new THREE.Vector3(localX, localY, localZ)
-
-  // Spiral twist: slat-local Z rotation
-  const spiralQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), params.spiralTwistAngle)
-  localPos.applyQuaternion(spiralQ)
-
-  // Blinds tilt: slat-local Y rotation (closing blinds)
+  // Apply blinds tilt (around slat-local Y)
   const blindsQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), params.blindsTiltAngle)
   localPos.applyQuaternion(blindsQ)
 
-  // Back to world coordinates
-  pos = new THREE.Vector3()
-  pos.addScaledVector(tangent, localPos.x)
-  pos.addScaledVector(vertical, localPos.y)
-  pos.addScaledVector(radial, localPos.z)
+  // Apply spiral twist (around slat-local Z)
+  const spiralQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), params.spiralTwistAngle)
+  localPos.applyQuaternion(spiralQ)
 
-  return [pos.x, pos.y, pos.z]
+  // Apply cone deformation (radial offset grows with vertical position)
+  const zNorm = (localY + (params.height / 2)) / params.height
+  const coneOffset = params.coneAngle * (zNorm - 0.5) * params.height
+  const finalR = p.baseR + coneOffset
+
+  // Translate outward along slat-local Z by final radius
+  localPos.z += finalR
+
+  // Rotate into cylinder around global Y by theta
+  const cosTheta = Math.cos(theta)
+  const sinTheta = Math.sin(theta)
+  const worldX = cosTheta * localPos.z - sinTheta * localPos.x
+  const worldY = localPos.y
+  const worldZ = sinTheta * localPos.z + cosTheta * localPos.x
+
+  return [worldX, worldY, worldZ]
 }
 
