@@ -1,73 +1,23 @@
 import React, { useMemo } from 'react'
-import { createNoise2D } from 'simplex-noise'
 import * as THREE from 'three'
+import { generateSlatProfiles } from '../core/generator'
 import { Line } from '@react-three/drei'
 
-const noise = createNoise2D()
-
 export default function LampScene({ params }) {
-  const {
-    height, radius, slats, profileResolution, roundiness,
-    baseSize,
-    lfo1Shape, lfo1Frequency, lfo1Amplitude, lfo1PhaseRandomness, lfo1AmplitudeRandomness,
-    lfo2Shape, lfo2Frequency, lfo2Amplitude, lfo2PhaseRandomness, lfo2AmplitudeRandomness,
-    twistAngle, tiltAngle, opacity
-  } = params
-
-  const minSlatWidth = 5
-
-  const slatsData = useMemo(() => {
-    return Array.from({ length: slats }).map((_, i) => {
-      const thetaNorm = i / slats
-      const thetaCenter = thetaNorm * Math.PI * 2
-
-      // Compute phase offsets per slat (loop-safe)
-      const lfo1PhaseOffset = computeLoopSafeNoise(thetaNorm) * lfo1PhaseRandomness
-      const lfo2PhaseOffset = computeLoopSafeNoise(thetaNorm + 100) * lfo2PhaseRandomness  // offset seed
-
-      const profile = []
-      for (let j = 0; j <= profileResolution; j++) {
-        const zNorm = j / profileResolution
-        const y = zNorm * height - height / 2
-
-        // Vertical amplitude modulation (loop-safe)
-        const lfo1AmpMod = 1 + computeLoopSafeNoise(zNorm) * lfo1AmplitudeRandomness
-        const lfo2AmpMod = 1 + computeLoopSafeNoise(zNorm + 200) * lfo2AmplitudeRandomness
-
-        const lfo1 = computeLFO(zNorm, lfo1Shape, lfo1Frequency, lfo1PhaseOffset)
-        const lfo2 = computeLFO(zNorm, lfo2Shape, lfo2Frequency, lfo2PhaseOffset)
-
-        const totalOffset =
-          baseSize +
-          lfo1Amplitude * lfo1AmpMod * lfo1 +
-          lfo2Amplitude * lfo2AmpMod * lfo2
-
-        const bulge = roundiness * radius * Math.sin(zNorm * Math.PI)
-        const baseR = radius + bulge * 0.5
-        const x = Math.max(totalOffset + bulge, bulge + minSlatWidth)
-
-        profile.push({ x, y, baseR, thetaCenter })
-      }
-
-      return profile
-    })
-  }, [height, radius, slats, profileResolution, roundiness, baseSize,
-      lfo1Shape, lfo1Frequency, lfo1Amplitude, lfo1PhaseRandomness, lfo1AmplitudeRandomness,
-      lfo2Shape, lfo2Frequency, lfo2Amplitude, lfo2PhaseRandomness, lfo2AmplitudeRandomness])
+  const profiles = useMemo(() => generateSlatProfiles(params, 'render'), [params])
 
   return (
     <>
-      {slatsData.map((profile, i) => {
-        const geometry = buildSlatGeometry(profile, twistAngle, tiltAngle)
-        const strokeLines = generateStrokeLines(profile, twistAngle, tiltAngle)
+      {profiles.map((profile, i) => {
+        const geometry = buildGeometry(profile, params)
+        const strokePoints = buildStroke(profile, params)
+
         return (
           <group key={i}>
             <mesh geometry={geometry}>
-              <meshStandardMaterial color="white" transparent opacity={opacity} side={THREE.DoubleSide} />
+              <meshStandardMaterial color="white" transparent opacity={params.opacity} side={THREE.DoubleSide} />
             </mesh>
-            {strokeLines.map((points, idx) => (
-              <Line key={idx} points={points} color="white" lineWidth={1} />
-            ))}
+            <Line points={strokePoints} color="black" lineWidth={1} />
           </group>
         )
       })}
@@ -75,31 +25,7 @@ export default function LampScene({ params }) {
   )
 }
 
-function computeLoopSafeNoise(norm) {
-  return noise(Math.cos(norm * Math.PI * 2), Math.sin(norm * Math.PI * 2))
-}
-
-function computeLFO(zNorm, shape, frequency, phaseOffset) {
-  const phase = zNorm * frequency + phaseOffset
-  return getWaveform(phase, shape)
-}
-
-function getWaveform(phase, shape) {
-  const p = phase % 1
-  switch (shape) {
-    case 'sine':
-      return (Math.sin(p * Math.PI * 2) + 1) / 2
-    case 'triangle':
-      return 1 - Math.abs((p * 2) - 1)
-    case 'square':
-      return p < 0.5 ? 1 : 0
-    case 'flat':
-    default:
-      return 0
-  }
-}
-
-function buildSlatGeometry(profile, twistAngle, tiltAngle) {
+function buildGeometry(profile, params) {
   const vertices = []
   const indices = []
 
@@ -107,12 +33,12 @@ function buildSlatGeometry(profile, twistAngle, tiltAngle) {
     const p1 = profile[j]
     const p2 = profile[j + 1]
 
-    vertices.push(
-      ...transform(p1, 0, twistAngle, tiltAngle),
-      ...transform(p1, p1.x, twistAngle, tiltAngle),
-      ...transform(p2, 0, twistAngle, tiltAngle),
-      ...transform(p2, p2.x, twistAngle, tiltAngle)
-    )
+    const p1L = transformToWorld(p1, 0, params)
+    const p1R = transformToWorld(p1, p1.x, params)
+    const p2L = transformToWorld(p2, 0, params)
+    const p2R = transformToWorld(p2, p2.x, params)
+
+    vertices.push(...p1L, ...p1R, ...p2L, ...p2R)
 
     const base = j * 4
     indices.push(base, base + 2, base + 1)
@@ -126,39 +52,49 @@ function buildSlatGeometry(profile, twistAngle, tiltAngle) {
   return geometry
 }
 
-function transform(p, localX, twistAngle, tiltAngle) {
-  const radial = new THREE.Vector3(Math.cos(p.thetaCenter), 0, Math.sin(p.thetaCenter))
-  const vertical = new THREE.Vector3(0, 1, 0)
-  const tangent = new THREE.Vector3(-Math.sin(p.thetaCenter), 0, Math.cos(p.thetaCenter))
-
-  let pt = new THREE.Vector3(localX, p.y, 0)
-  pt.applyAxisAngle(new THREE.Vector3(1, 0, 0), twistAngle)
-
-  const worldPos = new THREE.Vector3()
-    .addScaledVector(radial, p.baseR + pt.x)
-    .addScaledVector(vertical, pt.y)
-    .addScaledVector(tangent, pt.z)
-
-  const hinge = new THREE.Vector3().addScaledVector(radial, p.baseR)
-  worldPos.sub(hinge).applyAxisAngle(vertical, tiltAngle).add(hinge)
-
-  return [worldPos.x, worldPos.y, worldPos.z]
+function buildStroke(profile, params) {
+  const leftEdge = profile.map(p => transformToWorld(p, 0, params))
+  const rightEdge = [...profile].reverse().map(p => transformToWorld(p, p.x, params))
+  const closed = [...leftEdge, ...rightEdge, leftEdge[0]]
+  return closed.map(([x, y, z]) => new THREE.Vector3(x, y, z))
 }
 
-function generateStrokeLines(profile, twistAngle, tiltAngle) {
-  const leftEdge = profile.map(p => transform(p, 0, twistAngle, tiltAngle))
-  const rightEdge = profile.map(p => transform(p, p.x, twistAngle, tiltAngle))
+function transformToWorld(p, offsetX, params) {
+  const theta = p.thetaNorm * Math.PI * 2
+  const r = p.baseR + offsetX
 
-  const topEdge = [
-    transform(profile[profile.length - 1], 0, twistAngle, tiltAngle),
-    transform(profile[profile.length - 1], profile[profile.length - 1].x, twistAngle, tiltAngle)
-  ]
+  // World space initial position
+  let pos = new THREE.Vector3(
+    Math.cos(theta) * r,
+    p.y,
+    Math.sin(theta) * r
+  )
 
-  const bottomEdge = [
-    transform(profile[0], 0, twistAngle, tiltAngle),
-    transform(profile[0], profile[0].x, twistAngle, tiltAngle)
-  ]
+  // Build slat-local frame
+  const radial = new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta))  // Z (normal)
+  const vertical = new THREE.Vector3(0, 1, 0)                            // Y (height)
+  const tangent = new THREE.Vector3(-Math.sin(theta), 0, Math.cos(theta))// X (width)
 
-  return [leftEdge, rightEdge, topEdge, bottomEdge]
+  // Move into slat-local coordinates
+  const localX = tangent.dot(pos)
+  const localY = vertical.dot(pos)
+  const localZ = radial.dot(pos)
+  let localPos = new THREE.Vector3(localX, localY, localZ)
+
+  // Spiral twist: slat-local Z rotation
+  const spiralQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), params.spiralTwistAngle)
+  localPos.applyQuaternion(spiralQ)
+
+  // Blinds tilt: slat-local Y rotation (closing blinds)
+  const blindsQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), params.blindsTiltAngle)
+  localPos.applyQuaternion(blindsQ)
+
+  // Back to world coordinates
+  pos = new THREE.Vector3()
+  pos.addScaledVector(tangent, localPos.x)
+  pos.addScaledVector(vertical, localPos.y)
+  pos.addScaledVector(radial, localPos.z)
+
+  return [pos.x, pos.y, pos.z]
 }
 
