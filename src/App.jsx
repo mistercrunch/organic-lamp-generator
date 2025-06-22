@@ -13,11 +13,11 @@ export default function App() {
       height: { value: 300, min: 100, max: 500 },
       radius: { value: 100, min: 50, max: 200 },
       slats: { value: 40, min: 10, max: 100, step: 1 },
-      roundiness: { value: 0, min: 0, max: 1 },
+      roundiness: { value: 0, min: 0, max: 5 },
       baseSize: { value: 20, min: 0, max: 200 },
 
       lfo1Shape: { options: ['sine', 'triangle', 'square', 'flat'], value: 'flat' },
-      lfo1Frequency: { value: 1, min: 0.1, max: 100 },
+      lfo1Frequency: { value: 1, min: 0.1, max: 100, step: 0.1 },
       lfo1Amplitude: { value: 200, min: 0, max: 100 },
       lfo1PhaseRandomness: { value: 0, min: 0, max: 1 },
       lfo1AmplitudeRandomness: { value: 0, min: 0, max: 1 },
@@ -32,6 +32,7 @@ export default function App() {
 			spiralTwistAngle: { value: 0, min: -1, max: 1 },
 			blindsTiltAngle: { value: 0, min: -1, max: 1 },
 			opacity: { value: 0.5, min: 0, max: 1 },
+      color: { value: '#ffffff' },
     },
     { store }
   )

@@ -17,7 +17,7 @@ export default function LampScene({ params }) {
         return (
           <group key={i}>
             <mesh geometry={geometry}>
-              <meshStandardMaterial color="white" transparent opacity={params.opacity} side={THREE.DoubleSide} />
+              <meshStandardMaterial color={params.color} transparent opacity={params.opacity} side={THREE.DoubleSide} />
             </mesh>
             <Line points={strokePoints} color="black" lineWidth={1} />
           </group>
