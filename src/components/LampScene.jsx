@@ -9,7 +9,7 @@ export default function LampScene({ params }) {
   return (
     <>
       {profiles.map((profile, i) => {
-        const theta = i / profiles.length * Math.PI * 2
+        const theta = (i / profiles.length) * Math.PI * 2
 
         const geometry = buildGeometry(profile, params, theta)
         const strokePoints = buildStroke(profile, params, theta)
@@ -17,7 +17,12 @@ export default function LampScene({ params }) {
         return (
           <group key={i}>
             <mesh geometry={geometry}>
-              <meshStandardMaterial color={params.color} transparent opacity={params.opacity} side={THREE.DoubleSide} />
+              <meshStandardMaterial
+                color={params.color}
+                transparent
+                opacity={params.opacity}
+                side={THREE.DoubleSide}
+              />
             </mesh>
             <Line points={strokePoints} color="black" lineWidth={1} />
           </group>
@@ -55,8 +60,8 @@ function buildGeometry(profile, params, theta) {
 }
 
 function buildStroke(profile, params, theta) {
-  const leftEdge = profile.map(p => transformToWorld(p, 0, params, theta))
-  const rightEdge = [...profile].reverse().map(p => transformToWorld(p, p.x, params, theta))
+  const leftEdge = profile.map((p) => transformToWorld(p, 0, params, theta))
+  const rightEdge = [...profile].reverse().map((p) => transformToWorld(p, p.x, params, theta))
   const closed = [...leftEdge, ...rightEdge, leftEdge[0]]
   return closed.map(([x, y, z]) => new THREE.Vector3(x, y, z))
 }
@@ -67,20 +72,26 @@ function transformToWorld(p, offsetX, params, theta) {
   let localPos = new THREE.Vector3(localX, localY, 0)
 
   // Align slats so they face outward at blindsTiltAngle = 0
-	const alignQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2)
+  const alignQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2)
 
   localPos.applyQuaternion(alignQ)
 
   // Apply blinds tilt (around slat-local Y)
-  const blindsQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), params.blindsTiltAngle)
+  const blindsQ = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 1, 0),
+    params.blindsTiltAngle
+  )
   localPos.applyQuaternion(blindsQ)
 
   // Apply spiral twist (around slat-local Z)
-  const spiralQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), params.spiralTwistAngle)
+  const spiralQ = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 0, 1),
+    params.spiralTwistAngle
+  )
   localPos.applyQuaternion(spiralQ)
 
   // Apply cone deformation (radial offset grows with vertical position)
-  const zNorm = (localY + (params.height / 2)) / params.height
+  const zNorm = (localY + params.height / 2) / params.height
   const coneOffset = params.coneAngle * (zNorm - 0.5) * params.height
   const finalR = p.baseR + coneOffset
 
@@ -96,4 +107,3 @@ function transformToWorld(p, offsetX, params, theta) {
 
   return [worldX, worldY, worldZ]
 }
-

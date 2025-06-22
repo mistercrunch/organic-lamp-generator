@@ -1,8 +1,5 @@
 import { createNoise2D } from 'simplex-noise'
 
-
-
-
 const noise = new SimplexNoise()
 
 export function exportSVG(params) {
@@ -38,4 +35,3 @@ export function exportSVG(params) {
   link.download = 'lamp.svg'
   link.click()
 }
-

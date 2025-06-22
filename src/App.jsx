@@ -5,7 +5,13 @@ import LampScene from './components/LampScene'
 import { Leva, useControls, useCreateStore } from 'leva'
 import { generateSlatsSVG, generateDonutSVG } from './export/generateSVG'
 import { Layout, Button, Upload, message, Space, Typography, Card, Modal } from 'antd'
-import { UploadOutlined, DownloadOutlined, FileAddOutlined, FileDoneOutlined, EyeOutlined } from '@ant-design/icons'
+import {
+  UploadOutlined,
+  DownloadOutlined,
+  FileAddOutlined,
+  FileDoneOutlined,
+  EyeOutlined,
+} from '@ant-design/icons'
 import { Helmet } from 'react-helmet'
 
 const { Header, Content } = Layout
@@ -90,15 +96,32 @@ export default function App() {
 
   return (
     <>
-      <Helmet><title>Parametric Lamp Generator</title></Helmet>
+      <Helmet>
+        <title>Parametric Lamp Generator</title>
+      </Helmet>
 
       <Layout style={{ height: '100vh' }}>
-        <Header style={{ background: '#1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2rem' }}>Parametric Lamp Generator</div>
+        <Header
+          style={{
+            background: '#1a1a1a',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2rem' }}>
+            Parametric Lamp Generator
+          </div>
           <Space>
-            <Button icon={<EyeOutlined />} onClick={() => handleShowPreview('slats')}>Slats SVG</Button>
-            <Button icon={<EyeOutlined />} onClick={() => handleShowPreview('donuts')}>Donuts SVG</Button>
-            <Button icon={<DownloadOutlined />} onClick={handleExportState}>Export State</Button>
+            <Button icon={<EyeOutlined />} onClick={() => handleShowPreview('slats')}>
+              Slats SVG
+            </Button>
+            <Button icon={<EyeOutlined />} onClick={() => handleShowPreview('donuts')}>
+              Donuts SVG
+            </Button>
+            <Button icon={<DownloadOutlined />} onClick={handleExportState}>
+              Export State
+            </Button>
             <Upload beforeUpload={handleImportState} accept=".json" showUploadList={false}>
               <Button icon={<UploadOutlined />}>Import State</Button>
             </Upload>
@@ -137,7 +160,9 @@ export default function App() {
         footer={
           <Button
             type="primary"
-            onClick={() => handleDownload(svgPreview, `${modalTitle.replace(' ', '_').toLowerCase()}.svg`)}
+            onClick={() =>
+              handleDownload(svgPreview, `${modalTitle.replace(' ', '_').toLowerCase()}.svg`)
+            }
           >
             Download SVG
           </Button>
@@ -149,4 +174,3 @@ export default function App() {
     </>
   )
 }
-
