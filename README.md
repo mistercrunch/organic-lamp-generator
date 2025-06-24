@@ -17,6 +17,8 @@ Project is provided as is and can't provide any guarantees around whether things
 
 Using all sorts of parameters, and intersingly using some concepts out of audio synthesis, allowing to set 2 LFOs (low frequency oscillators) to modulate the parameters of the lamp shade.
 
+Inspiration came from this project I made 10 years ago while I had access to a laser cutter: https://mistercrunch.blogspot.com/2014/10/javascript-lamp-shades.html
+
 ## Usage
 
 Only requirement for usage is to share pics of things you build using this!
