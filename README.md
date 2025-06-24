@@ -13,6 +13,10 @@ Rendered live in 3d in the browser using Three.js
 
 Project is provided as is and can't provide any guarantees around whether things will assemble properly as this was a quick, weekend project and largely vide-coded with help from ChatGPT.
 
+## Features
+
+Using all sorts of parameters, and intersingly using some concepts out of audio synthesis, allowing to set 2 LFOs (low frequency oscillators) to modulate the parameters of the lamp shade.
+
 ## Usage
 
 Only requirement for usage is to share pics of things you build using this!
