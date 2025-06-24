@@ -1,12 +1,31 @@
-# React + Vite
+# Lamp Shade Generator for Laser Cutter
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
+<img width="1358" alt="Image" src="https://github.com/user-attachments/assets/3125730e-08a4-46a6-9286-ab65c938974f" />
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+<img width="1241" alt="Image" src="https://github.com/user-attachments/assets/b06c82ab-f4d9-4e4e-ba83-edbcc809b148" />
+<img width="1236" alt="Image" src="https://github.com/user-attachments/assets/1f0f4922-e221-4c1f-a889-0018c266e4f5" />
 
-## Expanding the ESLint configuration
+This is a simple lamp shade generator that creates SVG files suitable for laser cutting.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Try it live here -> https://mistercrunch.github.io/organic-lamp-generator/
+
+Rendered live in 3d in the browser using Three.js
+
+Project is provided as is and can't provide any guarantees around whether things will assemble properly as this was a quick, weekend project and largely vide-coded with help from ChatGPT.
+
+## Usage
+
+Only requirement for usage is to share pics of things you build using this!
+
+## Work in Progress
+
+NOTE: I have yet to print my first one, but wanted to share after making some progress
+
+While promising, many things on my TODO list:
+
+- make sure notches land in the right place and generally align
+- guarantee proportions in ways that align with thickness of the material use
+- for the "spiral effect, provide the right "give" in ways that account for the difformation
+- improve the "organic" look with the proper "randomness" and "noise" factors
+
