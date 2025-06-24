@@ -94,7 +94,9 @@ export default function App() {
 
   return (
     <>
-      <Helmet><title>Parametric Lamp Generator</title></Helmet>
+      <Helmet>
+        <title>Parametric Lamp Generator</title>
+      </Helmet>
 
       <Layout style={{ height: '100vh' }}>
         <Header style={{ background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

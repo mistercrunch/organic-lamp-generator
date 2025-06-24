@@ -7,7 +7,7 @@ A simple lamp shade generator that creates SVG files suitable for laser cutting.
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/b06c82ab-f4d9-4e4e-ba83-edbcc809b148" />
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/1f0f4922-e221-4c1f-a889-0018c266e4f5" />
 
-Try it live here -> https://mistercrunch.github.io/organic-lamp-generator/
+Try it live here -> https://mistercrunch.github.io/laser-cutter-lamp-generator/
 
 Rendered live in 3d in the browser using Three.js
 
